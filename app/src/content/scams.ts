@@ -57,41 +57,44 @@ const proceed = (feedback: string): PracticeChoice => ({
 export const SCAM_SCENARIOS: ScamScenario[] = [
   {
     id: "scam.airdrop",
-    title: "An asset notice",
-    objective: "Separate receiving spam from following its instructions.",
+    title: "The airdrop DM",
+    objective:
+      "Compare a reward promise with the transaction you are asked to approve.",
     setup:
-      "An unsolicited collectible appears in a fictional wallet with a reward notice attached.",
+      "A direct message arrives while you are browsing a project community.",
     takeaway:
-      "A displayed asset can carry untrusted advertising. Hide or report suspicious content through your wallet's own controls; do not follow its claim link.",
+      "Read what the wallet actually asks you to do. A claim page and a familiar avatar do not establish that a transaction matches your intent.",
     request: {
       label: "Airdrop claim",
-      kind: "Website request",
-      origin: "bonus-claim.example",
-      claim: "Your 10 SOL bonus expires in five minutes.",
+      kind: "Direct message and wallet request",
+      origin: "solana-rewards.example",
+      claim: "Your wallet qualified for an airdrop. Claim within 10 minutes.",
       fields: [
-        ["Requested information", "Recovery phrase"],
-        ["Where the link came from", "An unsolicited collectible description"],
-        ["Why the site says it needs it", "Unlock the reward"],
+        ["Instruction", "Send 0.4 SOL"],
+        ["Recipient", "TRAINING-9VTX-UNFAMILIAR-RECIPIENT-4PZM"],
+        ["Claim page domain", "solana-rewards.example"],
+        ["Project profile domain", "rewards.solana-community.example"],
+        ["Network fee", "0.000005 SOL (fictional)"],
       ],
       clues: [
-        "A token appearing in a wallet is not a wallet endorsement.",
-        "A recovery phrase is not needed to receive an asset.",
+        "The page promised you a reward. The transaction asked you to send SOL.",
+        "The claim page domain does not match the domain on the simulated project profile.",
       ],
       choices: [
         proceed(
-          "In a real scam, entering recovery words could expose the accounts derived from them. No words are collected here.",
+          "The dummy balance decreased by 0.400005 SOL, including the fictional fee. No real funds moved.",
         ),
         reject(
-          "Stop at the request for secrets. Check the promotion independently and use the wallet's report controls.",
+          "You rejected the outgoing payment. The dummy balance is unchanged.",
         ),
       ],
       recommended: "stop",
     },
-    question: "What creates the danger in this example?",
+    question: "Which detail contradicts the reward promise?",
     answers: [
-      "Simply receiving an unsolicited token",
-      "Following its instructions and exposing recovery secrets",
-      "Opening the wallet's own asset list",
+      "The account has a professional avatar",
+      "The wallet asks you to send 0.4 SOL",
+      "The message arrived in a community",
     ],
     correct: 1,
     source: tokens,
@@ -403,8 +406,8 @@ export const SCAM_SCENARIOS: ScamScenario[] = [
       origin: "Fictional wallet history",
       claim: "Use the recent recipient to save time.",
       fields: [
-        ["Trusted destination", "TRAINING-A7K4-CORRECT-MIDDLE-LM2Q"],
-        ["Proposed destination", "TRAINING-A7K4-CHANGED-MIDDLE-LM2Q"],
+        ["Trusted destination", "TRAINING-A7K4-mN7qP8vT5xR3-LM2Q"],
+        ["Proposed destination", "TRAINING-A7K4-mN7qP9vT5xR3-LM2Q"],
         ["Visible shortcut", "A7K4…LM2Q for both"],
         ["Address format", "Training labels, not real Solana addresses"],
       ],
@@ -908,8 +911,8 @@ const legitimateFields: Record<string, [string, string][]> = {
     ["New authority", "Your independently verified new account"],
   ],
   "scam.address": [
-    ["Trusted destination", "TRAINING-A7K4-CORRECT-MIDDLE-LM2Q"],
-    ["Proposed destination", "TRAINING-A7K4-CORRECT-MIDDLE-LM2Q"],
+    ["Trusted destination", "TRAINING-A7K4-mN7qP8vT5xR3-LM2Q"],
+    ["Proposed destination", "TRAINING-A7K4-mN7qP8vT5xR3-LM2Q"],
   ],
   "scam.phishing": [
     [
@@ -1145,4 +1148,9 @@ export function validAssessment(scenarioId: string, result: Assessment) {
     result.decision === request.recommended &&
     result.evidence === task.answer
   );
+}
+
+/** Scenarios with an inert, staged interface rather than a field-list preview. */
+export function hasScamScene(id: string) {
+  return ["scam.airdrop", "scam.address", "scam.support"].includes(id);
 }

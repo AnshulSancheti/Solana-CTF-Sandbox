@@ -1,6 +1,12 @@
-import { useState, type RefObject } from "react";
+import { lazy, Suspense, useState, type RefObject } from "react";
 import { SCAM_SCENARIOS } from "../content/scams";
 import { ScamSimulator } from "./ScamSimulator";
+
+const AirdropWalletPrompt = lazy(() =>
+  import("./AirdropWalletPrompt").then((module) => ({
+    default: module.AirdropWalletPrompt,
+  })),
+);
 
 export function ScamPractice({
   heading,
@@ -16,8 +22,8 @@ export function ScamPractice({
         Practice the pause before approval.
       </h1>
       <p className="lesson-objective">
-        Explore {SCAM_SCENARIOS.length} fictional scenarios. No wallet
-        connection is needed.
+        Explore {SCAM_SCENARIOS.length} fictional scenarios. The airdrop claim
+        opens a real Devnet wallet review; the other scenes use mock requests.
       </p>
       <p className="panel-caption">
         Free practice keeps your course position unchanged. Course learning
@@ -27,7 +33,9 @@ export function ScamPractice({
         Choose a scenario
         <select
           value={selected}
-          onChange={(event) => setSelected(event.target.value)}
+          onChange={(event) => {
+            setSelected(event.target.value);
+          }}
         >
           {SCAM_SCENARIOS.map((item, index) => (
             <option key={item.id} value={item.id}>
@@ -38,7 +46,17 @@ export function ScamPractice({
       </label>
 
       <p>{scenario.setup}</p>
-      <ScamSimulator key={scenario.id} scenarioId={scenario.id} />
+      <ScamSimulator
+        key={scenario.id}
+        scenarioId={scenario.id}
+        walletRequest={
+          scenario.id === "scam.airdrop" ? (
+            <Suspense fallback={<p>Loading Devnet wallet review…</p>}>
+              <AirdropWalletPrompt />
+            </Suspense>
+          ) : undefined
+        }
+      />
       <a
         className="inline-link"
         href={scenario.source.href}

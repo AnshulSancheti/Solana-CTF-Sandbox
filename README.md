@@ -4,6 +4,8 @@ A beginner learning app for wallet safety, Devnet transfers, request inspection,
 
 Start with **Try your first scam challenge**, or **Start learning from zero**. The recommended course covers wallet setup and secrets, connection permissions, Devnet funding, a 0.001 Devnet SOL transfer between two accounts you create, threat decisions, a teaching-program call, and receipt investigation. Protocol foundations and advanced authorities remain available as optional lessons.
 
+The airdrop exercise follows a fictional community DM into a claim page and mock wallet request. Address poisoning uses recent wallet activity; support impersonation leads to an inert recovery-form preview. Outcomes appear after the learner acts. The fictional scenes never access a wallet or accept recovery words. In free practice, one click on the claim page’s “Review claim in wallet” button prepares and validates a fresh request, then opens the real wallet prompt for a 0.001 test-SOL transfer. It asks only for a signature and discards the signed transaction without broadcasting or saving it. This prompt creates no Explorer receipt and grants no course completion.
+
 Each scenario includes a legitimate comparison. Completion requires inspecting request-specific evidence, choosing an action, and identifying supporting evidence. Three new final assessments test proceeding, rejecting, and investigating an unresolved receipt. Mistakes are retryable. Completion is a learning record, not a certification.
 
 ## Run locally
@@ -33,7 +35,7 @@ Both API suites create disposable local D1 databases. They use ports 8799 and 88
 
 ## Demo and configuration
 
-- [Live app](https://solana-learn.intelligentape.workers.dev) — deployed 2026-11-08; all 31 built static files verified by SHA-256.
+- [Live app](https://solana-learn.intelligentape.workers.dev) — Cloudflare Worker deployment; see the verification notes below.
 - [Teaching program on Devnet Explorer](https://explorer.solana.com/address/4N7BDpSPfdcfK7LSoZBRGUdabSY1Z5thjyUH2hSxBPQa?cluster=devnet).
 - Optional frontend environment variables: `VITE_RPC_URL` and `VITE_PROGRAM_ID`. These are public configuration, never secrets.
 

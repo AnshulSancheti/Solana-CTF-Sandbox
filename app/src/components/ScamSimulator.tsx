@@ -1,6 +1,8 @@
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
+import { ScamScene } from "./ScamScene";
 import {
   ALL_SCENARIOS,
+  hasScamScene,
   inspectionTask,
   validAssessment,
   type Assessment,
@@ -11,9 +13,11 @@ import {
 export function ScamSimulator({
   scenarioId,
   onAssessment,
+  walletRequest,
 }: {
   scenarioId: string;
   onAssessment?: (result: Assessment | null) => void;
+  walletRequest?: ReactNode;
 }) {
   const scenario = ALL_SCENARIOS.find((item) => item.id === scenarioId);
   return scenario ? (
@@ -21,17 +25,21 @@ export function ScamSimulator({
       key={scenarioId}
       scenario={scenario}
       onAssessment={onAssessment}
+      walletRequest={walletRequest}
     />
   ) : null;
 }
 function Simulation({
   scenario,
   onAssessment,
+  walletRequest,
 }: {
   scenario: ScamScenario;
   onAssessment?: (result: Assessment | null) => void;
+  walletRequest?: ReactNode;
 }) {
   const id = useId();
+  const [attempt, setAttempt] = useState(0);
   const [open, setOpen] = useState(false);
   const [variant, setVariant] = useState<Assessment["variant"]>("request");
   const [inspection, setInspection] = useState("");
@@ -43,7 +51,9 @@ function Simulation({
   const task = inspectionTask(scenario.id, variant)!;
   const result = { variant, inspection, decision, evidence };
   const correct = validAssessment(scenario.id, result);
+  const immersive = variant === "request" && hasScamScene(scenario.id);
   function reset(next = variant) {
+    setAttempt((value) => value + 1);
     setVariant(next);
     setInspection("");
     setDecision("");
@@ -52,14 +62,47 @@ function Simulation({
     setOpen(false);
     onAssessment?.(null);
   }
+  const controls = (
+    <div
+      className="simulation-choices"
+      role="group"
+      aria-label="Choose a simulated response"
+    >
+      {request.choices.map((choice) => (
+        <button
+          key={choice.id}
+          className="button button-secondary"
+          aria-pressed={decision === choice.id}
+          onClick={() => {
+            setDecision(choice.id);
+            setEvidence("");
+            setSubmitted(false);
+            onAssessment?.(null);
+          }}
+        >
+          {choice.id === "proceed"
+            ? "Proceed"
+            : choice.id === "stop"
+              ? "Reject"
+              : "Investigate further"}
+        </button>
+      ))}
+    </div>
+  );
   return (
     <section
       className="scam-simulator"
       aria-label={`${scenario.title} simulation`}
     >
       <div className="simulation-banner">
-        <strong>TRAINING SIMULATION</strong>
-        <span>No wallet request. No funds or secrets.</span>
+        <strong>
+          {walletRequest ? "TRAINING EXERCISE" : "TRAINING SIMULATION"}
+        </strong>
+        <span>
+          {walletRequest
+            ? "Airdrop claim uses a real Devnet sign-only prompt. No broadcast."
+            : "No wallet request. No funds or secrets."}
+        </span>
       </div>
       {scenario.comparison && (
         <div
@@ -81,35 +124,50 @@ function Simulation({
           </button>
         </div>
       )}
-      <div className="simulation-invitation">
-        <span className="eyebrow">{request.kind}</span>
-        <h2>{request.label}</h2>
-        <p>{request.claim}</p>
-        <button
-          className="button button-secondary"
-          aria-expanded={open}
-          aria-controls={id}
-          onClick={() => setOpen(!open)}
-        >
-          {open ? "Hide simulated request" : "Review simulated request"}
-        </button>
-      </div>
-      {open && (
+      {immersive ? (
+        <ScamScene
+          key={`${scenario.id}-${variant}-${attempt}`}
+          scenario={scenario}
+          decision={decision}
+          onReview={() => setOpen(true)}
+          controls={controls}
+          walletRequest={
+            scenario.id === "scam.airdrop" ? walletRequest : undefined
+          }
+        />
+      ) : (
+        <div className="simulation-invitation">
+          <span className="eyebrow">{request.kind}</span>
+          <h2>{request.label}</h2>
+          <p>{request.claim}</p>
+          <button
+            className="button button-secondary"
+            aria-expanded={open}
+            aria-controls={id}
+            onClick={() => setOpen(!open)}
+          >
+            {open ? "Hide simulated request" : "Review simulated request"}
+          </button>
+        </div>
+      )}
+      {open && (!immersive || decision) && (
         <div className="simulation-request" id={id}>
-          <dl className="simulation-fields">
-            <div>
-              <dt>Requesting site or source</dt>
-              <dd>
-                <code>{request.origin}</code>
-              </dd>
-            </div>
-            {request.fields.map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{value}</dd>
+          {!immersive && (
+            <dl className="simulation-fields">
+              <div>
+                <dt>Requesting site or source</dt>
+                <dd>
+                  <code>{request.origin}</code>
+                </dd>
               </div>
-            ))}
-          </dl>
+              {request.fields.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
           <label className="scenario-picker">
             {task.question}
             <input
@@ -122,31 +180,7 @@ function Simulation({
               }}
             />
           </label>
-          <div
-            className="simulation-choices"
-            role="group"
-            aria-label="Choose a simulated response"
-          >
-            {request.choices.map((choice) => (
-              <button
-                key={choice.id}
-                className="button button-secondary"
-                aria-pressed={decision === choice.id}
-                onClick={() => {
-                  setDecision(choice.id);
-                  setEvidence("");
-                  setSubmitted(false);
-                  onAssessment?.(null);
-                }}
-              >
-                {choice.id === "proceed"
-                  ? "Proceed"
-                  : choice.id === "stop"
-                    ? "Reject"
-                    : "Investigate further"}
-              </button>
-            ))}
-          </div>
+          {!immersive && controls}
           {decision && (
             <>
               <label className="scenario-picker">
@@ -207,11 +241,11 @@ function Simulation({
               <p>{scenario.takeaway}</p>
             </div>
           )}
-          <button className="text-button" onClick={() => reset()}>
-            Reset simulation
-          </button>
         </div>
       )}
+      <button className="text-button simulation-reset" onClick={() => reset()}>
+        Reset simulation
+      </button>
       <p className="simulation-footnote">
         Fictional training content. No recovery-phrase entry is provided.
       </p>

@@ -26,6 +26,10 @@ import {
   type PreparedTransfer,
   type Attempt,
 } from "../src/lib/liveScam";
+import {
+  prepareWalletPrompt,
+  requestWalletPrompt,
+} from "../src/lib/walletPrompt";
 class MemoryStorage {
   private values = new Map<string, string>();
   getItem(k: string) {
@@ -429,4 +433,98 @@ it("requires fresh network evidence when rechecking a previously saved success",
     (await refreshTrainingAttempt(connection, { ...a, status: "confirmed" }))
       .status,
   ).toBe("pending");
+});
+
+describe("sign-only wallet prompt", () => {
+  it("prepares without signing, verifies the returned signature, and discards it without broadcasting or saving", async () => {
+    const p = await prepareWalletPrompt(connection, key.publicKey);
+    expect(sign).not.toHaveBeenCalled();
+    await expect(
+      requestWalletPrompt(connection, p, sign, () => true),
+    ).resolves.toBeUndefined();
+    expect(sign).toHaveBeenCalledTimes(1);
+    expect(p.transaction.signature).toBeNull();
+    expect(connection.sendRawTransaction).not.toHaveBeenCalled();
+    expect(readAttempt(key.publicKey.toBase58(), "scam.airdrop")).toBeNull();
+  });
+  it("blocks a wrong network, expired preview, changed fee, and stale account before asking the wallet", async () => {
+    const p = await prepareWalletPrompt(connection, key.publicKey);
+    vi.mocked(connection.getGenesisHash).mockResolvedValueOnce("mainnet");
+    await expect(
+      requestWalletPrompt(connection, p, sign, () => true),
+    ).rejects.toThrow("Incorrect cluster");
+    vi.mocked(connection.getBlockHeight).mockResolvedValueOnce(101);
+    await expect(
+      requestWalletPrompt(connection, p, sign, () => true),
+    ).rejects.toThrow("expired");
+    vi.mocked(connection.getFeeForMessage).mockResolvedValueOnce({
+      value: 6000,
+    } as never);
+    await expect(
+      requestWalletPrompt(connection, p, sign, () => true),
+    ).rejects.toThrow("fee changed");
+    await expect(
+      requestWalletPrompt(connection, p, sign, () => false),
+    ).rejects.toThrow("account or page changed");
+    expect(sign).not.toHaveBeenCalled();
+    expect(connection.sendRawTransaction).not.toHaveBeenCalled();
+  });
+  it("propagates wallet rejection without storing a receipt or sending", async () => {
+    const p = await prepareWalletPrompt(connection, key.publicKey);
+    sign.mockRejectedValueOnce(new Error("User rejected"));
+    await expect(
+      requestWalletPrompt(connection, p, sign, () => true),
+    ).rejects.toThrow("User rejected");
+    expect(unresolvedAttempt(key.publicKey.toBase58())).toBeNull();
+    expect(connection.sendRawTransaction).not.toHaveBeenCalled();
+  });
+  it("rejects altered signed requests and account changes while the wallet is open", async () => {
+    const p = await prepareWalletPrompt(connection, key.publicKey);
+    sign.mockImplementationOnce(async (tx) => {
+      tx.instructions[0] = SystemProgram.transfer({
+        fromPubkey: key.publicKey,
+        toPubkey: TRAINING_DESTINATION,
+        lamports: LIVE_AMOUNT + 1,
+      });
+      tx.sign(key);
+      return tx;
+    });
+    await expect(
+      requestWalletPrompt(connection, p, sign, () => true),
+    ).rejects.toThrow("amount changed");
+    let active = true;
+    sign.mockImplementationOnce(async (tx) => {
+      tx.sign(key);
+      active = false;
+      return tx;
+    });
+    await expect(
+      requestWalletPrompt(connection, p, sign, () => active),
+    ).rejects.toThrow("account or page changed");
+    expect(connection.sendRawTransaction).not.toHaveBeenCalled();
+  });
+  it("does not open another prompt while a transaction receipt is unresolved", async () => {
+    await submit();
+    await expect(
+      prepareWalletPrompt(connection, key.publicKey),
+    ).rejects.toThrow(/unresolved/);
+    expect(sign).toHaveBeenCalledTimes(1);
+  });
+});
+
+it("blocks a request changed while the final RPC checks are running, before any signature", async () => {
+  const p = await prepareWalletPrompt(connection, key.publicKey);
+  vi.mocked(connection.getBalance).mockImplementationOnce(async () => {
+    p.transaction.instructions[0] = SystemProgram.transfer({
+      fromPubkey: key.publicKey,
+      toPubkey: TRAINING_DESTINATION,
+      lamports: LIVE_AMOUNT + 1,
+    });
+    return 10_000_000;
+  });
+  await expect(
+    requestWalletPrompt(connection, p, sign, () => true),
+  ).rejects.toThrow("amount changed");
+  expect(sign).not.toHaveBeenCalled();
+  expect(connection.sendRawTransaction).not.toHaveBeenCalled();
 });

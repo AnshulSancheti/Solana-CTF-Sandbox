@@ -700,13 +700,13 @@ const ORIGINAL_MISSIONS: Mission[] = [
     steps: [
       {
         id: "scam.airdrop",
-        title: "The airdrop in your wallet.",
+        title: "The airdrop in your DMs.",
         objective:
-          "Investigate an offer without treating its appearance as an endorsement.",
-        why: "A token in a wallet can contain a promotional name or link. Anyone can create convincing-looking assets. Being visible inside a wallet does not make an offer official.",
+          "Compare the reward promise with the action in the wallet request.",
+        why: "A convincing community message can lead to a polished claim page. Review the actual action before you approve it.",
         explanation: [
-          "Our simulated message says: “You received 10 SOL. Visit sol-rewards.example to unlock it.” The .example address is a non-working training example; do not browse it.",
-          "An urgent deadline, an unfamiliar destination, and a recovery-phrase request are warning signs. Stop and check the offer through an independently verified official source. Never provide secrets to claim a reward.",
+          "A fictional support account sends a reward link. Compare its domain with the simulated project profile, then inspect the mock wallet request.",
+          "The page promises a reward, but the wallet asks for an outgoing payment. Review purpose, recipient, amount, and fee independently of the page’s branding.",
         ],
         instructions: [],
         expected:
@@ -720,20 +720,20 @@ const ORIGINAL_MISSIONS: Mission[] = [
         scamScenario: "scam.airdrop",
         quiz: {
           question:
-            "The claim page asks for your recovery phrase. What do you do?",
+            "The page promises a reward, but the wallet asks you to send 0.4 SOL. What do you do?",
           options: [
             {
               id: "stop",
               title: "Close it and verify the claim through an official source",
               feedback:
-                "Correct. Recovery words are not needed to receive a reward. Ignore or report the suspicious asset using the wallet’s controls.",
+                "Correct. The outgoing payment contradicts the reward promise. Verify the offer independently before proceeding.",
             },
             {
               id: "trust",
               title:
-                "Enter the phrase because the message appeared in my wallet",
+                "Approve the payment because the claim page looks official",
               feedback:
-                "A wallet can display untrusted content. The phrase would give the recipient control of your accounts.",
+                "Branding does not change the transaction. Approval would authorize the outgoing payment shown in the wallet.",
             },
           ],
           correct: "stop",

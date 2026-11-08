@@ -54,3 +54,12 @@ Deployed the frontend and progress Worker to https://solana-learn.intelligentape
 The production homepage and all 31 built static files match the local build by SHA-256, following the canonical `/index.html` redirect. The live API returned 200 for the anonymous account endpoint, 401 for unauthenticated progress, and JSON 404 for an unknown API route. Email login remains disabled; localhost test-code mode is unavailable on production. No real learner account, signed wallet operation, or production progress mutation was used for verification.
 
 Build, lint, and Worker type checks passed again immediately before deployment. Browser visual/keyboard checks and physical-wallet behavior remain unverified. The Rust teaching program was not redeployed. This deployment does not imply the working-tree changes were committed or pushed to GitHub.
+
+
+## Scam practice and native-wallet prompt update (2026-11-08)
+
+The airdrop now has a staged community DM and claim page. Course lessons retain an inert wallet scene; free practice uses the claim-page button to prepare and validate a fresh 0.001 Devnet SOL request and open the connected wallet's sign-only prompt. The app discards the signed transaction without saving or broadcasting it. Address poisoning uses recent wallet activity, and support impersonation uses an inert recovery-form preview. No recovery-word input is provided.
+
+Validation for this update: 152 tests across 11 suites, lint, frontend build, Worker TypeScript check, 13 disposable cloud API checks, and 12 disposable learner-account checks passed. The existing large-bundle warning remains. New tests cover the single-click claim flow, duplicate clicks, wallet rejection, failed simulation, stale accounts, expired previews, modified requests, unsupported sign-only methods, and the absence of broadcast or signed-receipt storage.
+
+The current build has been served locally and its asset responses checked. Actual Phantom popup rendering and signing have not been exercised by the assistant. Browser visual, mobile, and keyboard validation remain outstanding; DOM focus tests do not establish real-browser coverage. The teaching program is unchanged.

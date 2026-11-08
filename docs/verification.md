@@ -63,3 +63,10 @@ The airdrop now has a staged community DM and claim page. Course lessons retain 
 Validation for this update: 152 tests across 11 suites, lint, frontend build, Worker TypeScript check, 13 disposable cloud API checks, and 12 disposable learner-account checks passed. The existing large-bundle warning remains. New tests cover the single-click claim flow, duplicate clicks, wallet rejection, failed simulation, stale accounts, expired previews, modified requests, unsupported sign-only methods, and the absence of broadcast or signed-receipt storage.
 
 The current build has been served locally and its asset responses checked. Actual Phantom popup rendering and signing have not been exercised by the assistant. Browser visual, mobile, and keyboard validation remain outstanding; DOM focus tests do not establish real-browser coverage. The teaching program is unchanged.
+
+
+## Wallet authorization recovery (2026-11-08)
+
+Phantom's 4100 authorization error is now recognized through both direct and adapter-wrapped errors. Program, transfer, and sign-only claim exercises offer an explicit connection reset. Reset invalidates the current preview and requires a new connection and review; it never clears saved receipts or retries a transaction. The user confirmed that disconnecting, selecting the intended practice account, and reconnecting resolved the reported error.
+
+157 tests across 12 suites, lint, and the frontend build passed after this update. The user confirmation establishes that the wallet request works after reconnection; it does not establish successful transaction execution or an Explorer receipt.

@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
     connected: true,
     publicKey: null as unknown,
     signTransaction: vi.fn(),
+    disconnect: vi.fn().mockResolvedValue(undefined),
   },
   prepare: vi.fn(),
   submit: vi.fn(),
@@ -47,6 +48,7 @@ beforeEach(() => {
     connected: true,
     publicKey: Keypair.generate().publicKey,
     signTransaction: vi.fn(),
+    disconnect: vi.fn().mockResolvedValue(undefined),
   };
   mocks.read.mockReturnValue(null);
   mocks.pending.mockReturnValue(null);
@@ -165,3 +167,39 @@ it("unresolved outcomes prevent a second transaction", async () => {
     ).disabled,
   ).toBe(true);
 });
+
+it.each(["transfer", "program"] as const)(
+  "offers explicit recovery for unauthorized %s signing without retrying or clearing receipts",
+  async (action) => {
+    const done = vi.fn();
+    mocks.submit.mockRejectedValueOnce(
+      new Error(
+        "The requested method and/or account has not been authorized by the user.",
+      ),
+    );
+    localStorage.setItem("receipt-preservation-check", "keep");
+    render(<WalletTransaction action={action} onReceipt={done} />);
+    if (action === "transfer") await prepareTransfer();
+    else {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Prepare and simulate request" }),
+      );
+      await screen.findByText("Review this exact request · simulation passed");
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Review in wallet" }));
+    await screen.findByLabelText("Wallet authorization recovery");
+    expect(
+      screen.queryByRole("button", { name: "Review in wallet" }),
+    ).toBeNull();
+    expect(mocks.wallet.disconnect).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Reset wallet connection" }),
+    );
+    await waitFor(() =>
+      expect(mocks.wallet.disconnect).toHaveBeenCalledTimes(1),
+    );
+    expect(mocks.submit).toHaveBeenCalledTimes(1);
+    expect(done).not.toHaveBeenCalled();
+    expect(localStorage.getItem("receipt-preservation-check")).toBe("keep");
+  },
+);

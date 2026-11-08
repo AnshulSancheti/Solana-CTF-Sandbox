@@ -19,6 +19,8 @@ import {
   type Attempt,
 } from "../lib/liveScam";
 import { explorerTxUrl, PROGRAM_ID } from "../lib/constants";
+import { isWalletAuthorizationError } from "../lib/walletAuthorization";
+import { WalletAuthorizationHelp } from "./WalletAuthorizationHelp";
 
 export function WalletTransaction({
   action,
@@ -72,6 +74,7 @@ function Exercise({
   );
   const [legacy, setLegacy] = useState<Attempt[]>(initial.legacy);
   const [notice, setNotice] = useState(initial.error);
+  const [authorizationError, setAuthorizationError] = useState(false);
   const [busy, setBusy] = useState(false);
   const mounted = useRef(true);
   const running = useRef(false);
@@ -100,10 +103,12 @@ function Exercise({
     running.current = true;
     setBusy(true);
     setNotice("");
+    setAuthorizationError(false);
     try {
       await withTransactionLock(owner, task);
     } catch (e) {
       if (mounted.current) {
+        setAuthorizationError(isWalletAuthorizationError(e));
         setNotice(e instanceof Error ? e.message : String(e));
         setPrepared(null);
         try {
@@ -340,6 +345,14 @@ function Exercise({
       ))}
       {busy && <p role="status">Waiting for wallet or network…</p>}
       {notice && <p role="status">{notice}</p>}
+      {authorizationError && (
+        <WalletAuthorizationHelp
+          onReset={() => {
+            setPrepared(null);
+            setReviewedAddress(false);
+          }}
+        />
+      )}
     </section>
   );
 }

@@ -8,6 +8,8 @@ import {
 } from "../lib/liveScam";
 import { withTransactionLock } from "../lib/transactionLifecycle";
 import { prepareWalletPrompt, requestWalletPrompt } from "../lib/walletPrompt";
+import { isWalletAuthorizationError } from "../lib/walletAuthorization";
+import { WalletAuthorizationHelp } from "./WalletAuthorizationHelp";
 
 export function AirdropWalletPrompt() {
   const wallet = useWallet();
@@ -22,6 +24,7 @@ function Prompt() {
   const owner = wallet.publicKey?.toBase58() ?? "";
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [authorizationError, setAuthorizationError] = useState(false);
   const running = useRef(false);
   const current = useRef({ owner, connected: wallet.connected, connection });
   const mounted = useRef(false);
@@ -50,6 +53,7 @@ function Prompt() {
     running.current = true;
     setBusy(true);
     setNotice("");
+    setAuthorizationError(false);
     try {
       await withTransactionLock(owner, async () => {
         // One user gesture prepares, validates, and opens the native wallet.
@@ -70,12 +74,14 @@ function Prompt() {
           );
       });
     } catch (error) {
-      if (active())
+      if (active()) {
+        setAuthorizationError(isWalletAuthorizationError(error));
         setNotice(
           error instanceof Error
             ? error.message
             : "The wallet request did not complete. Nothing was broadcast.",
         );
+      }
     } finally {
       running.current = false;
       if (mounted.current) setBusy(false);
@@ -123,6 +129,9 @@ function Prompt() {
         </>
       )}
       {notice && <p role="status">{notice}</p>}
+      {authorizationError && (
+        <WalletAuthorizationHelp onReset={() => setNotice("")} />
+      )}
     </div>
   );
 }

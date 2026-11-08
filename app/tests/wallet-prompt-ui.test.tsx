@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     connected: true,
     publicKey: null as unknown,
     signTransaction: vi.fn() as unknown,
+    disconnect: vi.fn().mockResolvedValue(undefined),
   },
   connection: { rpcEndpoint: "devnet" },
   prepare: vi.fn(),
@@ -38,6 +39,7 @@ beforeEach(() => {
     connected: true,
     publicKey: Keypair.generate().publicKey,
     signTransaction: vi.fn(),
+    disconnect: vi.fn().mockResolvedValue(undefined),
   };
   mocks.prepare.mockResolvedValue({ feeLamports: 5000 });
   mocks.request.mockResolvedValue(undefined);
@@ -141,4 +143,19 @@ it("shows simulation errors without opening the wallet", async () => {
     "simulation failed",
   );
   expect(mocks.request).not.toHaveBeenCalled();
+});
+
+it("offers the same authorization reset for the sign-only claim without automatic signing", async () => {
+  mocks.request.mockRejectedValueOnce({ code: 4100, message: "Unauthorized" });
+  render(<AirdropWalletPrompt />);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Review claim in wallet" }),
+  );
+  await screen.findByLabelText("Wallet authorization recovery");
+  expect(mocks.wallet.disconnect).not.toHaveBeenCalled();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Reset wallet connection" }),
+  );
+  await waitFor(() => expect(mocks.wallet.disconnect).toHaveBeenCalledTimes(1));
+  expect(mocks.request).toHaveBeenCalledTimes(1);
 });
